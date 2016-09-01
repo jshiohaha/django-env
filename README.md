@@ -4,8 +4,7 @@
 
 # Installation Requirements
 - Python3
-- Pip 
-- - If you don't have it, you can go to Homebrew's website or run the following on a Mac
+- Pip (If you don't have it, you can go to Homebrew's website or run the following on a Mac)
 ```Python
 sudo easy_install pip
 ```
