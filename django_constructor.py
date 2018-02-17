@@ -1,12 +1,8 @@
 import subprocess
 import os
-
-
-def check(expected_file):
-        f = open(expected_file, 'r')
-        for line in f:
-            if "STATIC_URL = '/static/'" in line:
-                return True
+from functools import wraps
+import errno
+import signal
 
 print('................Welcome..................')
 print('.                                       .')
@@ -22,17 +18,22 @@ print('If you do not enter anything, we will create the project in the ' +
 print('By the way, this is your current directory: {0}'.format(cwd))
 
 path = ''
-invalid = ['', '\n']
-while path in invalid:
-    path = input('Enter the absolute path where you want the project: ')
+invalid_path = True
+while invalid_path:
+    path = input('Enter the absolute path to the directory where you want the project: ')
     path = path.lstrip()
 
     if path is '\n':
+        print("what is this...........")
         path = os.getcwd
+
+    if not os.path.exists(path):
+        print("Oops... Looks like that directory does not exist. Let's try again with a directory that already exists.")
+        continue
 
     try:
         os.chdir(path)
-        break
+        invalid_path = False
     except:
         print('Oops... Looks like you entered an invalid directory')
         print("If you don't know what absolute path you want, reference your " +
@@ -48,17 +49,21 @@ print("You can find it by running the command 'cd ~/{0}'".format(dir))
 print("Don't worry about it... We'll go there now!")
 print('\n')
 
-# Make the directory
+# ----------------------------- Make the directory -----------------------------
 bashCommand = "sudo mkdir {0}".format(dir)
 process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
 output = process.communicate()[0]
 
-# Go to the directory
-path += dir
+# ----------------------------- Go to the directory -----------------------------
+end = len(path) - 1
+if path[end] == '/':
+    path += dir
+else:
+    path += "/" + dir
 os.chdir(path)
 
-# Set up virtual environment
-bashCommand = 'python3 -m venv venv'
+# ----------------------------- Set up virtual environment -----------------------------
+bashCommand = 'sudo python3 -m venv venv'
 process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
 output = process.communicate()[0]
 
@@ -68,7 +73,7 @@ print('Make sure to activate it anytime you want to run your servers!')
 print("Now let's install some dependencies: ")
 print('\n')
 
-# Try to install basic dependencies with pip
+# ----------------------------- Try to install basic dependencies with pip -----------------------------
 try:
     depend = ['django', ]
     for d in depend:
@@ -76,25 +81,42 @@ try:
         print('installing......... {0}'.format(d))
         process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
         output = process.communicate()[0]
+        print(output)
+        print("\n\n")
 except:
     print("Looks like you don't have pip!")
     print("If you're trying to run this with the default Python installation, " +
           "it's not going to work.")
     print("Try installing brew (Found here: http://brew.sh) and then run this " +
           " script again!")
-    print(".......................OR IF YOU TRUST ME...........................")
+    print(".......................OR, IF YOU TRUST ME...........................")
     print("Copy and paste into your terminal: /usr/bin/ruby -e " +
           "'$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)'")
     exit()
 
-# Set up django project
-project = input('What do you want to call your project? ')
-bashCommand = 'django-admin startproject {0} .'.format(project)
-process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
-output = process.communicate()[0]
+# ----------------------------- Set up django project -----------------------------
+invalid_project = True
+
+while invalid_project:
+    project = input('What do you want to call your project? ')
+
+    try:
+        bashCommand = 'sudo django-admin startproject {0} .'.format(project)
+        print("command is... " + bashCommand)
+        process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+        output = process.communicate()[0]
+        invalid_project = False
+    except:
+        print("Oops... Looks like we failed to create a new project. " + 
+              "There might already be a Python module with name '{0}'. Let's try again.".format(project))
 
 path = path + '/' + project
 os.chdir(path)
+
+# ----------------------------- Creating permissions -----------------------------
+bashCommand = 'sudo chmod 777 settings.py'
+process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+output = process.communicate()[0]
 
 expected_file = 'settings.py'
 
@@ -108,13 +130,20 @@ else:
 
 f.close()
 
-# YEET, success has been achieved
+# ----------------------------- Success -----------------------------
 print('\n')
 print('........................')
 print('.      Success!!!!     .')
 print('........................')
 print('\n')
-print('Our current directory is: {0}'.format(os.getcwd()))
+print('Your project directory is: {0}'.format(os.getcwd()))
 print('Thanks & Django on!')
 print('For common commands and other django shortcuts, ' +
       'checkout https://github.com/jShiohaha/django-env')
+
+
+def check(expected_file):
+        f = open(expected_file, 'r')
+        for line in f:
+            if "STATIC_URL = '/static/'" in line:
+                return True
